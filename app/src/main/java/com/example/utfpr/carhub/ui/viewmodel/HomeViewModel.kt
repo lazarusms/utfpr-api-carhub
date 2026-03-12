@@ -28,16 +28,16 @@ class HomeViewModel : ViewModel() {
             _isLoading.value = true
             val result = repository.getCars()
             if (result is Result.Success) {
-                _cars.value = result.data
+                _cars.value = result.data.sortedBy { it.id }//ordena pelo id
             }
             _isLoading.value = false
         }
     }
 
-    fun deleteCar(car: Car) {
-        viewModelScope.launch {
-            repository.deleteCar(car.id)
-            loadCars()
-        }
-    }
+//    fun deleteCar(car: Car) {
+//        viewModelScope.launch {
+//            repository.deleteCar(car.id)
+//            loadCars()
+//        }
+//    }
 }

@@ -10,25 +10,57 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.utfpr.carhub.ui.screens.carform.AddEditCarScreen
 import com.example.utfpr.carhub.ui.screens.home.HomeScreen
+import com.example.utfpr.carhub.ui.screens.login.LoginScreen
 import com.example.utfpr.carhub.ui.viewmodel.AddEditCarViewModel
 import com.example.utfpr.carhub.ui.viewmodel.HomeViewModel
+import com.example.utfpr.carhub.ui.viewmodel.LoginViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val homeViewModel: HomeViewModel = viewModel()
+    val loginViewModel: LoginViewModel = viewModel()
     val cars by homeViewModel.cars.collectAsState()
     val isLoading by homeViewModel.isLoading.collectAsState()
 
-    NavHost(navController = navController, startDestination = "home") {
+    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+    val startDestination = if (isLoggedIn) "home" else "login"
+
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable("login") {
+            LoginScreen(
+                viewModel = loginViewModel,
+                onLoginSuccess = {
+                    homeViewModel.loadCars()
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable("home") {
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            val phone = currentUser?.phoneNumber ?: ""
+
             HomeScreen(
                 cars = cars,
                 isLoading = isLoading,
                 onCarClick = { car -> navController.navigate("add_edit/${car.id}") },
-                onAddClick = { navController.navigate("add_edit/new") }
+                onAddClick = { navController.navigate("add_edit/new") },
+                onRefresh = { homeViewModel.loadCars() },
+                currentUserPhone = phone,
+                onLogout = {
+                    FirebaseAuth.getInstance().signOut()
+                    loginViewModel.reset()
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
             )
         }
+
         composable("add_edit/{carId}") { backStackEntry ->
             val carId = backStackEntry.arguments?.getString("carId") ?: "new"
             val existingCar = if (carId == "new") null else cars.find { it.id == carId }

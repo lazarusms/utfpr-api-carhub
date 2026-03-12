@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -106,10 +108,24 @@ fun AddEditCarScreen(
         position = CameraPosition.fromLatLngZoom(markerPosition, 13f)
     }
 
+    val scrollState = rememberScrollState()
+    var isMapTouched by remember { mutableStateOf(false) }
+
     var lastInitLat by remember { mutableDoubleStateOf(0.0) }
-    if (viewModel.lat != lastInitLat && (viewModel.lat != 0.0 || viewModel.long != 0.0)) {
+    if (viewModel.lat != lastInitLat) {
         lastInitLat = viewModel.lat
         cameraPositionState.position = CameraPosition.fromLatLngZoom(markerPosition, 13f)
+    }
+
+    viewModel.errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Campos inválidos") },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) { Text("OK") }
+            }
+        )
     }
 
     viewModel.deleteMessage?.let { message ->
@@ -167,7 +183,7 @@ fun AddEditCarScreen(
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState, enabled = !isMapTouched)
         ) {
             Box(
                 modifier = Modifier
@@ -238,19 +254,33 @@ fun AddEditCarScreen(
 
                 Text("Localização", fontWeight = FontWeight.Medium, fontSize = 16.sp)
 
-                GoogleMap(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(250.dp),
-                    cameraPositionState = cameraPositionState,
-                    onMapClick = { latLng ->
-                        viewModel.onLocationSelected(latLng.latitude, latLng.longitude)
-                    }
+                        .height(250.dp)
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    isMapTouched = event.changes.any { it.pressed }
+                                }
+                            }
+                        }
                 ) {
-                    Marker(
-                        state = MarkerState(position = markerPosition),
-                        title = viewModel.name.ifBlank { "Carro" }
-                    )
+                    GoogleMap(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp),
+                        cameraPositionState = cameraPositionState,
+                        onMapClick = { latLng ->
+                            viewModel.onLocationSelected(latLng.latitude, latLng.longitude)
+                        }
+                    ) {
+                        Marker(
+                            state = MarkerState(position = markerPosition),
+                            title = viewModel.name.ifBlank { "Carro" }
+                        )
+                    }
                 }
 
                 OutlinedButton(

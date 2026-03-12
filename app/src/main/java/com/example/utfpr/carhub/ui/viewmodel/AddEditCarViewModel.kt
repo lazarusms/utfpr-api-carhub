@@ -32,9 +32,9 @@ class AddEditCarViewModel : ViewModel() {
         private set
     var selectedImageUri by mutableStateOf<Uri?>(null)
         private set
-    var lat by mutableDoubleStateOf(0.0)
+    var lat by mutableDoubleStateOf(-23.5505)
         private set
-    var long by mutableDoubleStateOf(0.0)
+    var long by mutableDoubleStateOf(-46.6333)
         private set
     var isUploading by mutableStateOf(false)
         private set
@@ -46,6 +46,8 @@ class AddEditCarViewModel : ViewModel() {
         private set
     var deleteMessage by mutableStateOf<String?>(null)
         private set
+    var errorMessage by mutableStateOf<String?>(null)
+        private set
     val previewImageModel: Any?
         get() = selectedImageUri ?: imageUrl.takeIf { it.isNotBlank() }
 
@@ -55,8 +57,8 @@ class AddEditCarViewModel : ViewModel() {
         licence = car?.licence ?: ""
         year = car?.year ?: ""
         imageUrl = car?.imageUrl ?: ""
-        lat = car?.place?.lat ?: 0.0
-        long = car?.place?.long ?: 0.0
+        lat = car?.place?.lat ?: -23.5505
+        long = car?.place?.long ?: -46.6333
         selectedImageUri = null
     }
 
@@ -102,7 +104,20 @@ class AddEditCarViewModel : ViewModel() {
         deleteMessage = null
     }
 
+    fun clearError() {
+        errorMessage = null
+    }
+
     fun saveCar(existingCar: Car?, onSuccess: () -> Unit) {
+        val hasImage = selectedImageUri != null || imageUrl.isNotBlank()
+        when {
+            name.isBlank() -> { errorMessage = "Nome do carro é obrigatório."; return }
+            licence.isBlank() -> { errorMessage = "Placa é obrigatória."; return }
+            licence.length > 8 -> { errorMessage = "Placa deve ter no máximo 8 caracteres."; return }//contando com o - (ABC-1234)
+            year.isBlank() -> { errorMessage = "Ano é obrigatório."; return }
+            !hasImage -> { errorMessage = "Adicione uma foto do carro."; return }
+        }
+
         viewModelScope.launch {
             isSaving = true
             val finalImageUrl = selectedImageUri?.let { uri ->

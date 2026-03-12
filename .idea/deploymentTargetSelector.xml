@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-03-07T23:57:16.488008867Z">
+        <DropdownSelection timestamp="2026-03-10T01:30:04.741677863Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/lazarusm/.config/.android/avd/Pixel_9_Pro_XL.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RQ8R902QWYA" />
             </handle>
           </Target>
         </DropdownSelection>

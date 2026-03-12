@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,12 +17,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material. icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -45,7 +49,10 @@ fun HomeScreen(
     cars: List<Car>,
     isLoading: Boolean,
     onCarClick: (Car) -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onRefresh: () -> Unit = {},
+    currentUserPhone: String = "",
+    onLogout: () -> Unit = {}
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -64,6 +71,21 @@ fun HomeScreen(
                         fontSize = 26.sp
                     )
                 },
+                actions = {
+                    if (currentUserPhone.isNotBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = currentUserPhone,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        }
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
@@ -73,21 +95,27 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                items(cars) { car ->
-                    CarCard(car = car, onClick = { onCarClick(car) })
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            if (isLoading && cars.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(cars) { car ->
+                        CarCard(car = car, onClick = { onCarClick(car) })
+                    }
                 }
             }
         }
